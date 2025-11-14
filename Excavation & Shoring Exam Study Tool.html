@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excavation & Shoring Exam Study Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for aesthetic */
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
+        .tab-button.active {
+            border-bottom: 3px solid #059669; /* emerald-600 */
+            color: #059669;
+            font-weight: 600;
+        }
+        .card {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-radius: 0.5rem;
+            background-color: white;
+        }
+        .explanation {
+            border-left: 4px solid #34d399; /* emerald-400 */
+            background-color: #ecfdf5; /* light green for safety/learning */
+        }
+        .correct-answer {
+            background-color: #d1fae5;
+        }
+        .incorrect-answer {
+            background-color: #fee2e2;
+        }
+        .answer-option {
+            transition: all 0.15s ease-in-out;
+        }
+        .answer-option:hover:not(.disabled) {
+            background-color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-extrabold text-gray-800">Lesson 9: Excavation & Shoring Study Tool</h1>
+            <p class="text-xl text-gray-500 mt-2">Temporary Works II - CONS5103 Exam Prep</p>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <div class="flex justify-center border-b border-gray-200 mb-8">
+            <button id="notes-tab" class="tab-button active py-3 px-6 text-gray-600 hover:text-gray-800 transition duration-150 ease-in-out" onclick="showSection('notes')">
+                📚 Interactive Notes
+            </button>
+            <button id="mcq-tab" class="tab-button py-3 px-6 text-gray-600 hover:text-gray-800 transition duration-150 ease-in-out" onclick="showQuiz('mcq')">
+                📝 40 Multiple-Choice Questions
+            </button>
+            <button id="fitb-tab" class="tab-button py-3 px-6 text-gray-600 hover:text-gray-800 transition duration-150 ease-in-out" onclick="showQuiz('fitb')">
+                ✍️ 20 Fill-in-the-Blanks
+            </button>
+        </div>
+
+        <!-- Main Content Area -->
+        <main>
+            <!-- Notes Section -->
+            <section id="notes-section" class="space-y-6">
+                <!-- Content injected by JavaScript -->
+            </section>
+
+            <!-- Quiz Section -->
+            <section id="quiz-section" class="hidden">
+                <div id="quiz-container" class="max-w-3xl mx-auto">
+                    <!-- Quiz cards injected by JavaScript -->
+                </div>
+                <div id="quiz-controls" class="max-w-3xl mx-auto mt-6 flex justify-between items-center">
+                    <button id="prev-btn" class="px-6 py-3 bg-gray-300 text-gray-800 font-semibold rounded-lg shadow hover:bg-gray-400 transition" onclick="navigateQuiz(-1)" disabled>
+                        &larr; Previous
+                    </button>
+                    <div id="quiz-status" class="text-lg font-medium text-gray-600"></div>
+                    <button id="next-btn" class="px-6 py-3 bg-emerald-500 text-white font-semibold rounded-lg shadow hover:bg-emerald-600 transition" onclick="navigateQuiz(1)">
+                        Next &rarr;
+                    </button>
+                </div>
+                <div id="quiz-score" class="max-w-3xl mx-auto mt-8 p-6 card hidden">
+                    <h2 class="text-2xl font-bold text-center mb-4 text-emerald-700">Quiz Results</h2>
+                    <p id="score-text" class="text-xl text-center font-semibold"></p>
+                    <div class="flex justify-center mt-6">
+                        <button class="px-6 py-3 bg-gray-500 text-white font-semibold rounded-lg shadow hover:bg-gray-600 transition" onclick="resetQuiz()">
+                            Start Over
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // --- Data Definitions ---
+
+        const NOTES_DATA = [
+            {
+                title: "1. Core Definitions",
+                content: [
+                    { term: "Excavation", definition: "The removal of soil and rock to facilitate construction work (Slide 3)." },
+                    { term: "Temporary Support (Shoring)", definition: "The provision of temporary support to excavated faces and adjacent structures to ensure safety and construction work (Slide 3, 36)." },
+                    { term: "Angle of Repose", definition: "The angle at which an undisturbed face is self-supporting. Used to design safe slopes (Slide 26)." },
+                ]
+            },
+            {
+                title: "2. Planning & Site Investigation (The '5 Must-Dos')",
+                content: [
+                    { term: "Purpose", definition: "To establish existing soil conditions, geotechnical features, contaminants, and groundwater to determine an excavation strategy (Slide 5)." },
+                    { term: "Pre-Existing Condition Report", definition: "Documents the condition of adjacent structures, requiring owner approval, consent, and potentially temporary bracing/underpinning (Slide 6)." },
+                    { term: "Utility Services", definition: "Identify and locate all utility services (Electricity, gas, communication, water, waste) as they are extremely dangerous if unidentified (Slide 6)." },
+                    { term: "Methodology", definition: "Establish the plan for ground water control, retention system, plant for cut and removal, and haul/disposal (Slide 6)." },
+                    { term: "Consents", definition: "Commercial excavations require Building/Excavation (NZBC F5) and Resource Consents (RMA) covering volume, traffic, hours of work, and environmental mitigation (Slide 7)." },
+                ]
+            },
+            {
+                title: "3. Excavation Types & Protection",
+                content: [
+                    { term: "Trench Excavation", definition: "Long, narrow excavations where the horizontal width (W) is <strong>less</strong> than the vertical depth (D). Used for services and foundation footings (Slide 13, 14, 16)." },
+                    { term: "Open Excavation", definition: "Wide excavations where the horizontal width (W) is <strong>greater</strong> than the vertical depth (D). Used for basements and spread foundations (Slide 13, 14, 17)." },
+                    { term: "Benching", definition: "Cutting horizontal steps into the face/wall. Benches are typically limited to <1.5m high (Slide 22, 24, 26)." },
+                    { term: "Battering (Safe Slope)", definition: "Cutting the sides to a predetermined 'safe' slope. Typically 1V:1H (or 45°) above the water table, and 1V:1.5H below (Slide 22, 24, 26)." },
+                    { term: "Trench Shields", definition: "<strong>Protects workers</strong> from collapse by containing material, but <strong>does not</strong> stabilize the ground itself (Slide 22)." },
+                ]
+            },
+            {
+                title: "4. Hazards: Surcharge & Water Control",
+                content: [
+                    { term: "Excavation Failure", definition: "Caused by insufficient shoring, excessive surcharge loads, or excessive water loosening the soil (Slide 18)." },
+                    { term: "Surcharge Load", definition: "An <strong>additional load</strong> (buildings, vehicles, soil piles) imposed on the surface adjacent to an excavation, causing lateral forces (Slide 27)." },
+                    { term: "Underpinning", definition: "The process of <strong>strengthening the foundation</strong> of an adjacent building or structure when its load-bearing soil is removed by excavation (Slide 27, 29)." },
+                    { term: "De-watering", definition: "The process of removing surface water and ground water. Achieved by installing cut-off drains, drainage beds, sumps, and pumps (Slide 32, 33)." },
+                ]
+            },
+            {
+                title: "5. Shoring Systems & Piling",
+                content: [
+                    { term: "Vertical Shores (Dead Shores)", definition: "Provides vertical support, often used with needles and sole pads to support walls or beams (Slide 36, 38, 39)." },
+                    { term: "Inclined Shores (Raking Shores)", definition: "Angled supports running from the ground/sole plate up to the building/face (Slide 36, 40)." },
+                    { term: "Horizontal Shores (Struts/Flying Shores)", definition: "Horizontal supports used between two parallel faces, such as in trench excavations or across deep basements (Crosslot Bracing) feasible for spans up to 35m (Slide 36, 41, 42)." },
+                    { term: "Pile Curtains", definition: "Permanent retention systems used in deep excavations: Tangential (spaced), Contiguous (touching), and Secant (overlapping, creating a watertight wall) (Slide 52)." },
+                    { term: "Diaphragm Walls", definition: "A permanent shoring system installed using bentonite slurry and excavated panels, often used for deep basements in Top-Down construction (Slide 62, 63, 67)." },
+                ]
+            },
+        ];
+
+        const QUIZ_DATA = {
+            mcq: [
+                {
+                    q: "What is the primary definition of 'Temporary Support' (Shoring) according to the lecture slides?",
+                    options: [
+                        "A permanent wall system incorporated into the final structure.",
+                        "The removal of contaminated soil from a site.",
+                        "The temporary support during excavations to facilitate safety and construction work.",
+                        "A method of strengthening the foundations of a new building."
+                    ],
+                    correct: 2,
+                    explanation: "Temporary support, or shoring, is defined as the temporary support during excavations to facilitate safety and construction work. It is crucial for preventing collapse and ensuring a safe working environment (Slide 3)."
+                },
+                {
+                    q: "Which excavation type is defined as having a horizontal width (W) that is LESS than the vertical depth (D)?",
+                    options: [
+                        "Open Excavation",
+                        "Trench Excavation",
+                        "Shaft Excavation",
+                        "Drive Excavation"
+                    ],
+                    correct: 1,
+                    explanation: "Trench excavations are long, narrow cuts where the horizontal width is less than the vertical depth ($W < D$). They are typically required for services and foundation footings (Slide 14, 16)."
+                },
+                {
+                    q: "According to HSE Regulation 24, an excavated face more than what height must generally be shored, so far as is reasonably practicable?",
+                    options: [
+                        "1.0 m",
+                        "1.2 m",
+                        "1.5 m",
+                        "2.0 m"
+                    ],
+                    correct: 2,
+                    explanation: "HSE Regulation 24 requires any excavated face more than 1.5m high to be shored, unless cut back to a safe slope or the material is of proven good standing quality (Slide 18)."
+                },
+                {
+                    q: "Which term describes the process of strengthening the foundation of an adjacent building due to excavation near a boundary?",
+                    options: [
+                        "De-watering",
+                        "Crosslot Bracing",
+                        "Underpinning",
+                        "Battering"
+                    ],
+                    correct: 2,
+                    explanation: "Underpinning is the process of strengthening an existing building's foundation when excavation removes the solid-bearing soil beneath it, mitigating the risk of collapse due to surcharge loads (Slide 29)."
+                },
+                {
+                    q: "What is the recommended maximum angle of repose/safe slope for saturated soil (below the water table) unless determined otherwise by an engineer?",
+                    options: [
+                        "1V:1H",
+                        "1V:1.5H",
+                        "2V:1H",
+                        "4V:1H"
+                    ],
+                    correct: 1,
+                    explanation: "The angle of repose for saturated soil (below the water table) should not be more than 1V:1.5H (1 vertical to 1.5 horizontal), as saturated soil is less stable (Slide 26)."
+                },
+                {
+                    q: "What is the key difference between a Trench Shield and Shoring?",
+                    options: [
+                        "A Trench Shield is permanent; Shoring is temporary.",
+                        "A Trench Shield is only used for shallow trenches.",
+                        "A Trench Shield protects workers from collapse but does NOT ensure ground stability.",
+                        "A Trench Shield must be designed by a geotechnical engineer."
+                    ],
+                    correct: 2,
+                    explanation: "A Trench Shield's primary purpose is to protect workers from falling material, but it does not prevent ground movement or collapse itself. Shoring actively prevents the sides from collapsing (Slide 22)."
+                },
+                {
+                    q: "Which type of shoring is classified as a Horizontal Shore, typically used between two parallel faces?",
+                    options: [
+                        "Dead Shores",
+                        "Raking Shores",
+                        "Tiebacks",
+                        "Flying Shores (Struts)"
+                    ],
+                    correct: 3,
+                    explanation: "Flying Shores or Struts are classified as Horizontal Shores and are used to provide support between two opposite excavated faces (Slide 41)."
+                },
+                {
+                    q: "What is the term for an additional load imposed on the surface adjacent to an excavation, such as a vehicle or a spoil pile?",
+                    options: [
+                        "Active Load",
+                        "Passive Load",
+                        "Lateral Load",
+                        "Surcharge Load"
+                    ],
+                    correct: 3,
+                    explanation: "A Surcharge Load is an additional load imposed on the surface adjacent to an excavation that causes lateral forces to act on the sides, increasing the risk of collapse (Slide 27)."
+                },
+                {
+                    q: "What is the purpose of a <strong>Pre-Existing Condition Report</strong> during site investigation?",
+                    options: [
+                        "To establish the final foundation design.",
+                        "To determine the required excavation volume.",
+                        "To document the condition of adjacent structures and plan temporary support.",
+                        "To apply for a Resource Consent."
+                    ],
+                    correct: 2,
+                    explanation: "The Pre-Existing Condition Report documents the state of adjacent structures so that temporary support, like underpinning, can be planned and liability for damage can be managed (Slide 6)."
+                },
+                {
+                    q: "The term used for a permanent shoring system where overlapping concrete piles create a continuous, watertight wall is:",
+                    options: [
+                        "Tangential Bored Piles",
+                        "Contiguous Bored Piles",
+                        "Secant Bored Piles",
+                        "Soldier Piles"
+                    ],
+                    correct: 2,
+                    explanation: "Secant Bored Piles are interlocking piles (Drilled Second: strong concrete, through Drilled first: weak concrete) that form a continuous, sealed wall, making them ideal for retaining both soil and water (Slide 52)."
+                },
+                {
+                    q: "What is the simple strategy for de-watering an excavation floor when the water table is high?",
+                    options: [
+                        "Constructing a Diaphragm Wall.",
+                        "Installing a drainage bed between lower perimeter drains which are actively pumped.",
+                        "Allowing the water to evaporate naturally.",
+                        "Building a temporary coffer dam."
+                    ],
+                    correct: 1,
+                    explanation: "A simple, effective strategy is to install a drainage bed between lower perimeter drains that lead to a sump, which can then be actively pumped to maintain a dry working platform (Slide 32, 33)."
+                },
+                {
+                    q: "What is <strong>Benching</strong> as a control method?",
+                    options: [
+                        "Cutting the excavation side to a safe slope.",
+                        "Installing vertical shores and struts.",
+                        "Cutting horizontal steps on the face/wall of an excavation.",
+                        "Applying a layer of concrete to the excavated face."
+                    ],
+                    correct: 2,
+                    explanation: "Benching is the method of cutting horizontal steps of the face, side, or wall of an excavation to reduce the unsupported height (Slide 22)."
+                },
+                {
+                    q: "Which type of shoring system is most feasible for deep basement excavations with spans up to 35m?",
+                    options: [
+                        "Needle Shores",
+                        "Raking Shores",
+                        "Flying Shores ('Crosslot' Struts)",
+                        "Dead Shores"
+                    ],
+                    correct: 2,
+                    explanation: "Flying Shores, or Crosslot Struts, are horizontal steel members used to brace opposite sides of a deep excavation, feasible for spans up to 35m (Slide 42)."
+                },
+                {
+                    q: "Which consent category covers the Volume of excavated material, traffic movement, and dust/mud mitigation?",
+                    options: [
+                        "Building/Excavation Consent",
+                        "Health and Safety at Work Act (HSWA) Notification",
+                        "Resource Consent (RMA)",
+                        "Territorial Authority (TA) Approval"
+                    ],
+                    correct: 2,
+                    explanation: "Resource Consents (RMA) managed by the Territorial Authority/Regional Council deal with the environmental and public impact of the work, including volume, traffic, noise, and dust/silt mitigation (Slide 7)."
+                },
+                {
+                    q: "Excavation is considered an integral part of most construction and can be considered to be:",
+                    options: [
+                        "Foundation Works",
+                        "Civil Works",
+                        "External Works to the actual building works",
+                        "Substructure Works"
+                    ],
+                    correct: 2,
+                    explanation: "Excavation is an integral part of construction and is generally classified as External Works to the actual building works, often extending beyond the building line (Slide 4)."
+                },
+                {
+                    q: "What material is typically used in the diaphragm wall process to resist loads on excavated faces until the concrete is poured?",
+                    options: [
+                        "Cement Grout",
+                        "Bentonite Slurry",
+                        "Polymer Foam",
+                        "Expansive Clay"
+                    ],
+                    correct: 1,
+                    explanation: "Diaphragm walls are excavated through a <strong>bentonite slurry</strong>, which has sufficient hydrostatic pressure to temporarily resist the loads on the excavated faces (Slide 63, 64)."
+                },
+                {
+                    q: "Which of the following is NOT a common cause of excavation failure?",
+                    options: [
+                        "Insufficient support (shoring).",
+                        "Excessive loads occurring adjacent to the excavation.",
+                        "The removal of topsoil prior to excavation.",
+                        "Excessive water loosening the soil."
+                    ],
+                    correct: 2,
+                    explanation: "While site preparation, the removal of topsoil is standard procedure and is not a direct cause of collapse. The main causes are inadequate support, excessive external loads, and water (Slide 18)."
+                },
+                {
+                    q: "What is the typical safe slope for soil <strong>above</strong> the water table?",
+                    options: [
+                        "1V:1H (or 45°)",
+                        "1V:2H (or 26.6°)",
+                        "2V:1H (or 63.4°)",
+                        "1V:1.5H (or 33.7°)"
+                    ],
+                    correct: 0,
+                    explanation: "The angle of repose/safe slope for an undisturbed face above the water table should not be more than 1V:1H (or 45°) (Slide 25, 26)."
+                },
+                {
+                    q: "What is the term for an inclined shore used to support a building wall, often connected to a sole plate on the ground?",
+                    options: [
+                        "Needle Shore",
+                        "Dead Shore",
+                        "Raking Shore",
+                        "Flying Shore"
+                    ],
+                    correct: 2,
+                    explanation: "Raking Shores are inclined/angled supports used to brace the side of an existing structure (Slide 40)."
+                },
+                {
+                    q: "Which of the following is considered an environmental hazard during excavation work?",
+                    options: [
+                        "Traffic movement",
+                        "Surcharge loads",
+                        "Noise, dust, mud, and silt",
+                        "Undermining adjacent foundations"
+                    ],
+                    correct: 2,
+                    explanation: "Major environmental hazards listed are noise, dust, mud, stormwater, and silt. These require mitigation measures stipulated in the Resource Consent (Slide 9)."
+                },
+                {
+                    q: "Contiguous bored piles are spaced at what maximum distance?",
+                    options: [
+                        "Diameter + 50mm",
+                        "Diameter centres or Diameter + 150mm max.",
+                        "Diameter + 300mm",
+                        "Twice the pile diameter"
+                    ],
+                    correct: 1,
+                    explanation: "Contiguous bored piles are spaced at diameter centres or a maximum of diameter + 150mm max (Slide 56)."
+                },
+                {
+                    q: "What is the height limit for individual benches when using the benching method for excavation protection?",
+                    options: [
+                        "1.0 m max",
+                        "1.2 m max",
+                        "1.5 m max",
+                        "2.0 m max"
+                    ],
+                    correct: 2,
+                    explanation: "Battering may be benched in heights of <1.5m (Slide 24, 26)."
+                },
+                {
+                    q: "What is the name of the process where excavation and floor construction under and above the ground floor occur concurrently?",
+                    options: [
+                        "Pre-loading construction",
+                        "Cantilever construction",
+                        "Top-Down construction",
+                        "Bottom-Up construction"
+                    ],
+                    correct: 2,
+                    explanation: "Top-Down construction allows for the superstructure (above ground) to begin before the basement is fully excavated and finished, by constructing the basement floors sequentially from the top down (Slide 67)."
+                },
+                {
+                    q: "In shoring systems, what are <strong>Walings</strong>?",
+                    options: [
+                        "Vertical timber members that bear the soil load.",
+                        "Horizontal beams placed against the sheeting to distribute the pressure.",
+                        "Diagonal braces connecting the struts.",
+                        "The anchor points for tiebacks."
+                    ],
+                    correct: 1,
+                    explanation: "Walings are horizontal beams (e.g., 150 x 100) placed against the sheeting/piling to distribute the load from the soil to the struts/props (Slide 37)."
+                },
+                {
+                    q: "What is the primary function of a Geotechnical Engineer during the planning phase?",
+                    options: [
+                        "To manage site logistics.",
+                        "To carry out the soil investigation and provide a geotechnical report.",
+                        "To obtain the resource consents.",
+                        "To operate the heavy machinery."
+                    ],
+                    correct: 1,
+                    explanation: "A soil investigation is carried out by geotechnical engineers to determine soil strata, bearing characteristics, and groundwater (Slide 5)."
+                },
+                {
+                    q: "What does the excavation strategy/construction methodology plan need to consider regarding the soil?",
+                    options: [
+                        "The color and texture of the soil.",
+                        "The name of the truck operator.",
+                        "Retention system, plant for cut and removal, and haul/disposal.",
+                        "The type of grass coverage."
+                    ],
+                    correct: 2,
+                    explanation: "Establishing methodology involves planning the retention system, what plant (machinery) to use for cutting and removal, and how the excavated soil will be hauled and disposed of (Slide 6)."
+                },
+                {
+                    q: "What is the term for an additional horizontal brace used in deep excavations, often connecting opposite walls?",
+                    options: [
+                        "Crosslot Bracing",
+                        "Raking Shores",
+                        "Dead Shores",
+                        "Underpinning"
+                    ],
+                    correct: 0,
+                    explanation: "Crosslot Bracing is a shoring system where horizontal struts brace opposite sides of the excavation (Slide 43, 45)."
+                },
+                {
+                    q: "Which piece of specialist machinery is common for trench digging for ground services?",
+                    options: [
+                        "Excavators",
+                        "Bulldozers",
+                        "Ditch Witches (Chain Trencher)",
+                        "Graders"
+                    ],
+                    correct: 2,
+                    explanation: "For trench digging, smaller, specialist machinery like backhoes (backactors) and 'ditch witches' are common due to easier maneuvering (Slide 10, 11)."
+                },
+                {
+                    q: "A large, open excavation required for the Auckland Casino car park involved a volume of:",
+                    options: [
+                        "50m³",
+                        "1,000m³",
+                        "30,000m³",
+                        "300,000m³"
+                    ],
+                    correct: 3,
+                    explanation: "The Auckland Casino car park basement excavation was cited as an example of a large excavation volume of 300,000m³ (Slide 4)."
+                },
+                {
+                    q: "Which type of bored pile creates a watertight retaining wall by having the second, stronger pile drilled to overlap the first, weaker concrete pile?",
+                    options: [
+                        "Tangential Piles",
+                        "Contiguous Piles",
+                        "Secant Piles",
+                        "Diaphragm Piles"
+                    ],
+                    correct: 2,
+                    explanation: "Secant Piles use overlapping bores to create a continuous, sealed, and thus watertight wall (Slide 52)."
+                },
+                {
+                    q: "The identification of utility services is critical because:",
+                    options: [
+                        "It determines the final construction cost.",
+                        "Unidentified contaminants/hazardous materials can be extremely dangerous.",
+                        "It is required by the Transport New Zealand authority.",
+                        "Unidentified utility services can be extremely dangerous during excavation."
+                    ],
+                    correct: 3,
+                    explanation: "The slide explicitly states that identifying and locating utility services (electricity, gas, communication) is essential because unidentified services can be extremely dangerous during excavation (Slide 6)."
+                },
+                {
+                    q: "What is the purpose of <strong>De-watering</strong> an excavation?",
+                    options: [
+                        "To compact the soil for better bearing capacity.",
+                        "To remove surface water and ground water to maintain a dry working platform.",
+                        "To test the water table depth.",
+                        "To soften the soil for easier digging."
+                    ],
+                    correct: 1,
+                    explanation: "De-watering removes surface water and groundwater, which prevents the continual risk of collapse caused by water and maintains a safe, dry working platform (Slide 32)."
+                },
+                {
+                    q: "Which shoring system is classified as an <strong>Inclined Shore</strong>?",
+                    options: [
+                        "Dead Shore",
+                        "Raking Shore",
+                        "Strut",
+                        "Soldier Pile"
+                    ],
+                    correct: 1,
+                    explanation: "Raking Shores are inclined/angled supports used to brace the sides of a structure or excavation (Slide 36)."
+                },
+                {
+                    q: "The protection of the public typically requires a minimum fence height of:",
+                    options: [
+                        "0.9 m",
+                        "1.2 m",
+                        "1.5 m",
+                        "1.8 m"
+                    ],
+                    correct: 1,
+                    explanation: "The minimum requirement to fence off an excavation is a 1.2m high fence, combined with warning signs and flags (Slide 9)."
+                },
+                {
+                    q: "What are the common uses for Open Excavations?",
+                    options: [
+                        "Installing building services and utility lines.",
+                        "Constructing small foundation footings.",
+                        "The establishment of building sites/basements and construction of spread foundations.",
+                        "Drilling bore holes for site investigation."
+                    ],
+                    correct: 2,
+                    explanation: "Open excavations, where width is greater than depth, are typically required for basements and the construction of spread foundations (Slide 17)."
+                },
+                {
+                    q: "Excavation volumes for civil work can often be considerable, sometimes exceeding:",
+                    options: [
+                        "50,000m³",
+                        "100,000m³",
+                        "500,000m³",
+                        "1,000,000m³"
+                    ],
+                    correct: 3,
+                    explanation: "Excavation volumes for civil work are often considerable, 'not unusually exceeding 1,000,000m³' (Slide 4)."
+                },
+                {
+                    q: "What is the purpose of <strong>Sole Pads</strong> and <strong>Sole Plates</strong> in shoring systems?",
+                    options: [
+                        "To distribute the load from the vertical/raking shores to the ground.",
+                        "To connect the waling to the sheeting.",
+                        "To act as the permanent foundation.",
+                        "To prevent water from entering the excavation."
+                    ],
+                    correct: 0,
+                    explanation: "Sole pads (for dead shores) and sole plates (for raking shores) are used to spread the compressive load from the shoring members onto the ground (Slide 39, 40)."
+                },
+                {
+                    q: "Which NZ law is paramount regarding Hazard Management and notification of particularly hazardous work?",
+                    options: [
+                        "New Zealand Building Code (NZBC F5)",
+                        "Resource Management Act (RMA)",
+                        "Health and Safety at Work Act 2015 (HSWA)",
+                        "Territorial Authority (TA) bylaws"
+                    ],
+                    correct: 2,
+                    explanation: "The application of the Health and Safety at Work Act 2015 and notification to Worksafe New Zealand regarding Hazard Management is of paramount importance (Slide 7)."
+                },
+                {
+                    q: "What type of load can be caused by buildings, vehicles, equipment, and soil adjacent to an excavation?",
+                    options: [
+                        "Dead Load",
+                        "Live Load",
+                        "Wind Load",
+                        "Surcharge Load"
+                    ],
+                    correct: 3,
+                    explanation: "Buildings, vehicles, equipment, people, and soil are all listed as common causes of a Surcharge Load (Slide 27)."
+                },
+                {
+                    q: "What is the primary characteristic of <strong>Tangential Bored Piles</strong>?",
+                    options: [
+                        "They are placed with a gap/spacing between them.",
+                        "They are installed in an overlapping sequence.",
+                        "They are driven steel sections.",
+                        "They require bentonite slurry for installation."
+                    ],
+                    correct: 0,
+                    explanation: "Tangential bored piles are placed 'tangentially'—meaning they are spaced apart—unlike contiguous or secant piles (Slide 52)."
+                }
+            ],
+            fitb: [
+                {
+                    q: "Excavation involves the removal of rock, gravels, sands, clays and ______.",
+                    answer: "soils",
+                    explanation: "Excavation is the process of removing earth, rock, and other materials, including various types of soil like gravels, sands, clays, and general soils (Slide 4)."
+                },
+                {
+                    q: "The geology in Auckland typically consists of an overburden of clay on deep sediments of silty sandstone, known as the ______ Series.",
+                    answer: "Waitemata",
+                    explanation: "The typical geology in Auckland is an overburden of clay on deep sediments of silty sandstone, referred to as the Waitemata Series (Slide 4)."
+                },
+                {
+                    q: "A soil investigation is carried out by ______ engineers.",
+                    answer: "geotechnical",
+                    explanation: "The investigation to determine soil conditions, strength, and characteristics is performed by geotechnical engineers (Slide 5)."
+                },
+                {
+                    q: "Unidentified ______ can be extremely dangerous during excavation.",
+                    answer: "contaminants/hazardous materials",
+                    explanation: "Identifying and locating utility services, contaminants, and hazardous materials is one of the '5 Things to do' because they pose extreme danger (Slide 6)."
+                },
+                {
+                    q: "A ______ Excavation is wide, where the horizontal width at ground level is greater than the vertical depth ($W > D$).",
+                    answer: "Open",
+                    explanation: "Open excavations are wide and typically used for basements and spread foundations where the width exceeds the depth (Slide 14, 17)."
+                },
+                {
+                    q: "Excavation failure can be caused by insufficient support, excessive loads, or excessive ______ loosening the soil.",
+                    answer: "water",
+                    explanation: "Excessive water (e.g., heavy rain, groundwater) loosens the soil, significantly increasing the risk of excavation collapse (Slide 18)."
+                },
+                {
+                    q: "The control method where the sides of the excavation are cut to a predetermined 'safe' slope is called ______.",
+                    answer: "Battering",
+                    explanation: "Battering is the process of cutting the sides to a safe slope, such as 1V:1H or 1V:1.5H, depending on the water table (Slide 22)."
+                },
+                {
+                    q: "Unless determined otherwise, the angle of repose for soil **below** the water table should not be more than 1V:1.__H.",
+                    answer: "5",
+                    explanation: "The safe slope for saturated soil below the water table is set at 1V:1.5H (Slide 26)."
+                },
+                {
+                    q: "The maximum individual height for benches in the benching control method is ______.",
+                    answer: "1.5m",
+                    explanation: "Battering may be benched in heights of less than 1.5m (Slide 26)."
+                },
+                {
+                    q: "To mitigate the danger of surcharge loads, one can create a ______ perimeter around the excavation.",
+                    answer: "no-go",
+                    explanation: "Creating a no-go perimeter prevents vehicles, people, or soil piles from imposing surcharge loads too close to the edge of the excavation (Slide 27)."
+                },
+                {
+                    q: "The process of strengthening the foundation of an adjacent building or structure is called ______.",
+                    answer: "underpinning",
+                    explanation: "Underpinning is required when excavation removes the solid-bearing soil from beneath an adjacent building (Slide 29)."
+                },
+                {
+                    q: "De-watering is the process of removing surface water and ______ water from a construction site.",
+                    answer: "ground",
+                    explanation: "De-watering must control both surface run-off/stormwater and groundwater seeping into the excavation (Slide 32)."
+                },
+                {
+                    q: "Horizontal shores used between two parallel faces in a deep excavation are often referred to as ______ struts.",
+                    answer: "crosslot",
+                    explanation: "Crosslot bracing or struts are used in deep excavations spanning up to 35m to brace the opposing faces (Slide 42, 43)."
+                },
+                {
+                    q: "In shoring systems, a ______ is a horizontal beam placed against the sheeting to distribute the pressure.",
+                    answer: "waling",
+                    explanation: "Walings distribute the load from the excavated face (via the sheeting) to the struts or props (Slide 37)."
+                },
+                {
+                    q: "Vertical shores used to support a building wall with a needle are known as ______ shores.",
+                    answer: "dead",
+                    explanation: "Dead Shores or props provide vertical support, often in conjunction with needles, to hold up a wall or floor (Slide 39)."
+                },
+                {
+                    q: "A Trench Shield protects workers from ground collapse, but it does NOT ensure ground ______.",
+                    answer: "stability",
+                    explanation: "This is a key point: shields protect the worker, but shoring ensures the ground's stability (Slide 22)."
+                },
+                {
+                    q: "The three types of Pile Curtains are Tangential, Contiguous, and ______ bored piles.",
+                    answer: "Secant",
+                    explanation: "The permanent pile curtain systems are Tangential (spaced), Contiguous (touching), and Secant (overlapping) (Slide 52)."
+                },
+                {
+                    q: "Diaphragm walls are installed through a ______ slurry which provides hydrostatic pressure to resist loads.",
+                    answer: "bentonite",
+                    explanation: "Bentonite slurry is essential in Diaphragm Wall construction to maintain the stability of the excavated trench before concrete is poured (Slide 63, 64)."
+                },
+                {
+                    q: "The minimum fencing height for an excavation is 1.2m, but trenches over 1.5m and open faces over 5.0m require 1.__m fencing.",
+                    answer: "8",
+                    explanation: "Trenches over 1.5m deep and open excavations with faces over 5.0m require 1.8m fencing for public protection (Slide 9)."
+                },
+                {
+                    q: "The overall plan for the work must consider the transport of heavy equipment to and from the site, which falls under the category of ______ & co-ordination.",
+                    answer: "Logistics",
+                    explanation: "Logistics and co-ordination cover the equipment and materials required to commence and complete operations, including transport of heavy equipment (Slide 6)."
+                }
+            ]
+        };
+
+        let currentQuizType = 'mcq';
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let answers = {}; // Store user's answers
+
+        // --- Utility Functions ---
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // --- View Control Functions ---
+
+        function showSection(sectionId) {
+            // Check if element exists before attempting to access classList
+            const notesSection = document.getElementById('notes-section');
+            const quizSection = document.getElementById('quiz-section');
+            
+            if (notesSection) notesSection.classList.add('hidden');
+            if (quizSection) quizSection.classList.add('hidden');
+
+            const targetSection = document.getElementById(`${sectionId}-section`);
+            if (targetSection) targetSection.classList.remove('hidden');
+
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            
+            const targetTab = document.getElementById(`${sectionId}-tab`);
+            if (targetTab) targetTab.classList.add('active');
+
+            if (sectionId === 'notes') {
+                renderNotes();
+            }
+        }
+        
+        function renderNotes() {
+            const notesSection = document.getElementById('notes-section');
+            notesSection.innerHTML = NOTES_DATA.map(section => `
+                <div class="card p-6 shadow-xl bg-white mb-6 border-t-4 border-emerald-600">
+                    <h2 class="text-2xl font-bold mb-4 text-emerald-800 border-b pb-2">${section.title}</h2>
+                    <div class="space-y-4">
+                        ${section.content.map(item => `
+                            <div class="bg-gray-50 p-4 rounded-lg flex flex-col md:flex-row shadow-sm hover:bg-gray-100 transition duration-150">
+                                <p class="font-bold text-gray-900 md:w-1/3 flex-shrink-0">
+                                    <span class="text-emerald-600 mr-2">•</span>${item.term}:
+                                </p>
+                                <p class="text-gray-700 md:w-2/3 mt-1 md:mt-0 md:pl-4 border-l md:border-l-0">
+                                    ${item.definition}
+                                </p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function showQuiz(quizType) {
+            currentQuizType = quizType;
+            showSection('quiz');
+            
+            // Explicitly handle quiz tab activation/deactivation
+            const mcqTab = document.getElementById('mcq-tab');
+            const fitbTab = document.getElementById('fitb-tab');
+
+            if (mcqTab) mcqTab.classList.remove('active');
+            if (fitbTab) fitbTab.classList.remove('active');
+            
+            const targetTab = document.getElementById(`${quizType}-tab`);
+            if (targetTab) targetTab.classList.add('active');
+
+
+            // Reset quiz state and render first question
+            resetQuiz();
+            renderQuestion(currentQuestionIndex);
+        }
+
+        function resetQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            answers = {};
+            const scoreDiv = document.getElementById('quiz-score');
+            const container = document.getElementById('quiz-container');
+            const controls = document.getElementById('quiz-controls');
+
+            if (scoreDiv) scoreDiv.classList.add('hidden');
+            if (container) container.classList.remove('hidden');
+            if (controls) controls.classList.remove('hidden');
+
+            renderQuestion(currentQuestionIndex);
+        }
+
+        // --- Quiz Logic Functions ---
+
+        function renderQuestion(index) {
+            const data = QUIZ_DATA[currentQuizType];
+            if (index < 0 || index >= data.length) return;
+
+            const question = data[index];
+            const container = document.getElementById('quiz-container');
+            if (!container) return; // Null check for safety
+            
+            container.innerHTML = ''; // Clear previous content
+
+            const total = data.length;
+            const quizStatus = document.getElementById('quiz-status');
+            if (quizStatus) quizStatus.textContent = `Question ${index + 1} of ${total} (${currentQuizType.toUpperCase()})`;
+
+            // Determine if answered
+            const isAnswered = answers[index] !== undefined;
+
+            let questionHtml = '';
+            if (currentQuizType === 'mcq') {
+                // MCQ Rendering
+                const optionsHtml = shuffleArray([...question.options].map((option, i) => ({ text: option, originalIndex: i }))).map(item => {
+                    const optionIndex = item.originalIndex;
+                    let classes = 'p-4 border border-gray-200 rounded-lg cursor-pointer transition answer-option';
+                    if (!isAnswered) {
+                        classes += ' hover:bg-emerald-50';
+                    } else {
+                        classes += ' disabled';
+                        if (optionIndex === question.correct) {
+                            classes = 'p-4 rounded-lg correct-answer text-gray-800 font-semibold';
+                        } else if (answers[index] === optionIndex) {
+                            classes = 'p-4 rounded-lg incorrect-answer text-gray-800';
+                        }
+                    }
+                    return `
+                        <div class="${classes}" data-index="${optionIndex}" onclick="${isAnswered ? '' : `checkMcqAnswer(${index}, ${optionIndex})`}">
+                            ${String.fromCharCode(65 + item.originalIndex)}. ${item.text}
+                        </div>
+                    `;
+                }).join('');
+
+                questionHtml = `
+                    <div class="card p-8 bg-white">
+                        <h3 class="text-xl font-bold mb-6 text-gray-900">${index + 1}. ${question.q}</h3>
+                        <div class="space-y-3">
+                            ${optionsHtml}
+                        </div>
+                    </div>
+                `;
+            } else if (currentQuizType === 'fitb') {
+                // FITB Rendering
+                questionHtml = `
+                    <div class="card p-8 bg-white">
+                        <h3 class="text-xl font-bold mb-6 text-gray-900">${index + 1}. ${question.q.replace('______', '<input type="text" id="fitb-input" class="p-2 border border-gray-300 rounded-md mx-2 font-mono text-center w-48" placeholder="Type answer">')}</h3>
+                        ${!isAnswered ? `
+                            <button class="mt-4 px-6 py-2 bg-emerald-500 text-white font-semibold rounded-lg shadow hover:bg-emerald-600 transition" onclick="checkFitbAnswer(${index})">
+                                Submit Answer
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+            }
+
+            // Explanation Rendering (If answered)
+            if (isAnswered) {
+                const isCorrect = currentQuizType === 'mcq' ? answers[index] === question.correct : answers[index];
+                const feedback = isCorrect ? '✅ Correct!' : '❌ Incorrect.';
+                const correctText = currentQuizType === 'fitb' ? `The correct answer is: <span class="font-mono font-bold">${question.answer.toUpperCase()}</span>.` : '';
+
+                questionHtml += `
+                    <div class="card p-6 mt-4 explanation">
+                        <h4 class="text-lg font-bold mb-2 text-emerald-800">${feedback} Explanation:</h4>
+                        ${correctText}
+                        <p class="text-gray-700">${question.explanation}</p>
+                    </div>
+                `;
+            }
+
+
+            container.innerHTML = questionHtml;
+            updateControls(index, total);
+
+            if (currentQuizType === 'fitb' && isAnswered) {
+                // If FITB is answered, render the user's input and correct answer
+                const userAnswer = answers[index];
+                const isCorrect = userAnswer === question.answer.toLowerCase();
+                const inputClass = isCorrect ? 'correct-answer' : 'incorrect-answer';
+
+                const inputHtml = `<span class="p-2 border border-gray-300 rounded-md mx-2 font-mono text-center w-48 ${inputClass}">${userAnswer.toUpperCase()}</span>`;
+                const newQ = question.q.replace('______', inputHtml);
+
+                // Re-inject the static answered state
+                const questionHeader = document.querySelector('.card h3');
+                if (questionHeader) questionHeader.innerHTML = `${index + 1}. ${newQ}`;
+            }
+        }
+
+        function updateControls(index, total) {
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            
+            if (prevBtn) prevBtn.disabled = index === 0;
+            if (nextBtn) nextBtn.disabled = index === total - 1;
+
+            if (index === total - 1 && answers[index] !== undefined) {
+                if (nextBtn) {
+                    nextBtn.textContent = 'View Score';
+                    nextBtn.onclick = calculateScore;
+                }
+            } else if (index === total - 1) {
+                if (nextBtn) {
+                    nextBtn.textContent = 'Finish Quiz';
+                    nextBtn.onclick = calculateScore;
+                }
+            } else {
+                if (nextBtn) {
+                    nextBtn.textContent = 'Next →';
+                    nextBtn.onclick = () => navigateQuiz(1);
+                }
+            }
+            if (prevBtn) prevBtn.onclick = () => navigateQuiz(-1);
+        }
+
+        function navigateQuiz(direction) {
+            if (currentQuestionIndex + direction >= 0 && currentQuestionIndex + direction < QUIZ_DATA[currentQuizType].length) {
+                currentQuestionIndex += direction;
+                renderQuestion(currentQuestionIndex);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        function checkMcqAnswer(index, selectedOptionIndex) {
+            if (answers[index] !== undefined) return; // Prevent re-answering
+
+            answers[index] = selectedOptionIndex;
+            renderQuestion(index); // Re-render to show feedback
+        }
+
+        function checkFitbAnswer(index) {
+            const inputElement = document.getElementById('fitb-input');
+            if (!inputElement) return; // Null check for safety
+
+            const userAnswer = inputElement.value.trim().toLowerCase();
+            const correctAnswer = QUIZ_DATA[currentQuizType][index].answer.toLowerCase();
+
+            if (!userAnswer) {
+                inputElement.style.borderColor = 'red';
+                inputElement.placeholder = 'Please enter an answer.';
+                return;
+            }
+
+            answers[index] = userAnswer;
+            renderQuestion(index); // Re-render to show feedback
+        }
+
+        function calculateScore() {
+            score = 0;
+            const data = QUIZ_DATA[currentQuizType];
+            let allAnswered = true;
+
+            for (let i = 0; i < data.length; i++) {
+                if (answers[i] === undefined) {
+                    allAnswered = false;
+                    break;
+                }
+                const question = data[i];
+                if (currentQuizType === 'mcq') {
+                    if (answers[i] === question.correct) {
+                        score++;
+                    }
+                } else if (currentQuizType === 'fitb') {
+                    if (answers[i].toLowerCase() === question.answer.toLowerCase()) {
+                        score++;
+                    }
+                }
+            }
+
+            if (!allAnswered) {
+                if (!confirm(`You have not answered all ${data.length} questions. Do you want to submit your current score?`)) {
+                    return; // Stay on the current question
+                }
+            }
+
+            const total = data.length;
+            const percentage = ((score / total) * 100).toFixed(1);
+
+            const container = document.getElementById('quiz-container');
+            const controls = document.getElementById('quiz-controls');
+            const scoreDiv = document.getElementById('quiz-score');
+
+            if (container) container.classList.add('hidden');
+            if (controls) controls.classList.add('hidden');
+            if (scoreDiv) scoreDiv.classList.remove('hidden');
+
+            const scoreText = document.getElementById('score-text');
+            if (scoreText) {
+                scoreText.innerHTML = `
+                    You scored ${score} out of ${total} (${percentage}%). <br>
+                    ${percentage >= 75 ? '<span class="text-green-600">Great Job! You\'re ready for the exam.</span>' : '<span class="text-red-600">Keep studying those notes and review your incorrect answers!</span>'}
+                `;
+            }
+        }
+
+        // Initialize the view to the Notes section on load
+        document.addEventListener('DOMContentLoaded', () => {
+            renderNotes();
+        });
+
+    </script>
+</body>
+</html>
